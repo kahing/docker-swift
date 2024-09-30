@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -18,20 +18,21 @@ RUN apt-get update && \
         python3-pyeclib \
         python3-setuptools \
         python3-simplejson \
+        python3-tz \
         python3-xattr \
         rsyslog \
         rsync \
     && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    pip3 install supervisor pytz
+    pip3 install --break-system-packages supervisor
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git-core && \
     git clone --branch 3.11.1 --single-branch --depth 1 https://github.com/openstack/python-swiftclient.git /usr/local/src/python-swiftclient && \
-    cd /usr/local/src/python-swiftclient && python3 setup.py develop && \
+    cd /usr/local/src/python-swiftclient && pip3 install --break-system-packages . && \
     git clone --branch 2.32.0 --single-branch --depth 1 https://github.com/openstack/swift.git /usr/local/src/swift && \
-    cd /usr/local/src/swift && python3 setup.py develop && \
+    cd /usr/local/src/swift && pip3 install --break-system-packages . && \
     apt-get remove -y --purge git-core git && \
     apt-get autoremove -y --purge && \
     apt-get clean && \
@@ -51,7 +52,7 @@ RUN	mkdir /var/log/supervisor/ && \
     sed -i 's/SLEEP_BETWEEN_AUDITS = 30/SLEEP_BETWEEN_AUDITS = 86400/' /usr/local/src/swift/swift/obj/auditor.py && \
     sed -i 's/\$PrivDropToGroup syslog/\$PrivDropToGroup adm/' /etc/rsyslog.conf && \
     sed -i '/imklog/s/^/#/' /etc/rsyslog.conf && \
-    mkdir -p /var/log/swift/hourly; chown -R syslog.adm /var/log/swift; chmod -R g+w /var/log/swift && \
+    mkdir -p /var/log/swift/hourly; chown -R syslog:adm /var/log/swift; chmod -R g+w /var/log/swift && \
     ln -s /swift/nodes/1 /srv/1 && \
     mkdir -p /swift/nodes/1 /srv/1/node/sdb1 /var/run/swift /var/cache/swift && \
     chown -R swift:swift /swift/nodes /etc/swift /srv/1 /var/run/swift /var/cache/swift
